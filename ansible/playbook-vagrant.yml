@@ -35,3 +35,10 @@
 
 - name: 'Run playbook-vault1-add_entries_to_vault_server.yml'
   ansible.builtin.import_playbook: playbook-vault1-add_entries_to_vault_server.yml
+
+#
+# only on Vault2 server
+#
+
+- name: 'Run playbook-vault2-vault-sync.yml'
+  ansible.builtin.import_playbook: playbook-vault2-vault-sync.yml
