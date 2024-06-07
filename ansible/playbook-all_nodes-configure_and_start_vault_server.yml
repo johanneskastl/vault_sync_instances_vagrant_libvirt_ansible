@@ -1,0 +1,120 @@
+---
+- name: 'Configure and start vault'
+  hosts: 'all'
+  gather_facts: true
+  become: true
+
+  tasks:
+
+    - name: 'Add environment variable to /root/.profile'
+      ansible.builtin.lineinfile:
+        path: '/root/.profile'
+        regexp: '^export VAULT_ADDR'
+        line: "export VAULT_ADDR='http://{{ ansible_default_ipv4['address'] }}:8200'"
+        create: true
+        owner: 'root'
+        group: 'root'
+        mode: '0644'
+
+    - name: 'Add environment variable to /home/vagrant/.profile'
+      ansible.builtin.lineinfile:
+        path: '/home/vagrant/.profile'
+        regexp: '^export VAULT_ADDR'
+        line: "export VAULT_ADDR='http://{{ ansible_default_ipv4['address'] }}:8200'"
+        create: true
+        owner: 'vagrant'
+        group: 'vagrant'
+        mode: '0644'
+
+    - name: 'Manage vault user (add home directory)'
+      ansible.builtin.user:
+        name: 'vault'
+        home: '/var/lib/vault/'
+        create_home: true
+
+    - name: 'Create vault.service.d/'
+      ansible.builtin.file:
+        path: '/etc/systemd/system/vault.service.d/'
+        state: 'directory'
+        owner: 'root'
+        group: 'root'
+        mode: '0755'
+      notify:
+        - 'Restart vault.service'
+
+    - name: 'Create vault.service.d/override.conf'
+      ansible.builtin.template:
+        src: 'override.conf.j2'
+        dest: '/etc/systemd/system/vault.service.d/override.conf'
+        owner: 'root'
+        group: 'root'
+        mode: '0644'
+      notify:
+        - 'Restart vault.service'
+
+    - name: 'Create /etc/vault.d/'
+      ansible.builtin.file:
+        path: '/etc/vault.d/'
+        state: 'directory'
+        owner: 'root'
+        group: 'root'
+        mode: '0755'
+
+    - name: 'Create /etc/vault.d/vault.hcl'
+      ansible.builtin.template:
+        src: 'vault.hcl.j2'
+        dest: '/etc/vault.d/vault.hcl'
+        owner: 'vault'
+        group: 'vault'
+        mode: '0644'
+      notify:
+        - 'Restart vault.service'
+
+    - name: 'Start but do NOT enable the vault.service (server is running in dev mode, all changes are lost after a restart...)'
+      ansible.builtin.service:
+        name: 'vault.service'
+        state: 'started'
+        enabled: false
+
+    - name: 'Flush handlers'
+      ansible.builtin.meta: flush_handlers
+
+    - name: 'Fetch Vault root token'
+      ansible.builtin.slurp:
+        src: '/var/lib/vault/.vault-token'
+      register: slurp_vault_token
+
+    - name: 'Save root token for the root user'
+      ansible.builtin.copy:
+        dest: '/root/.vault-token'
+        content: "{{ slurp_vault_token.content | b64decode }}"
+        owner: 'root'
+        group: 'root'
+        mode: '0600'
+
+    - name: 'Save root token for vagrant user'
+      ansible.builtin.copy:
+        dest: '/home/vagrant/.vault-token'
+        content: "{{ slurp_vault_token.content | b64decode }}"
+        owner: 'vagrant'
+        group: 'vagrant'
+        mode: '0600'
+
+    - name: 'Save root token on Ansible control node'
+      ansible.builtin.copy:
+        dest: "vault_root_token--{{ inventory_hostname }}"
+        content: "{{ slurp_vault_token.content | b64decode }}"
+      delegate_to: 'localhost'
+      become: false
+
+    - name: 'Print Vault root token'
+      ansible.builtin.debug:
+        msg: "The Vault root token is: {{ slurp_vault_token.content | b64decode }}"
+
+  handlers:
+
+    - name: 'Restart vault.service'
+      ansible.builtin.service:
+        name: 'vault.service'
+        state: 'restarted'
+        daemon_reload: true
