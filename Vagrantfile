@@ -1,7 +1,7 @@
 Vagrant.configure("2") do |config|
 
   ###################################################################################
-  config.vm.define "vault" do |node|
+  config.vm.define "vault1" do |node|
 
     # which image to use
     node.vm.box = "opensuse/Leap-15.5.x86_64"
@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
     end
 
     # set the hostname
-    node.vm.hostname = "vault"
+    node.vm.hostname = "vault1"
 
     # disable shared folders
     node.vm.synced_folder ".", "/vagrant", disabled: true
