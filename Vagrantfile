@@ -19,6 +19,11 @@ Vagrant.configure("2") do |config|
     # disable shared folders
     node.vm.synced_folder ".", "/vagrant", disabled: true
 
+    node.trigger.after :destroy do |trigger|
+      trigger.warn = "Removing ansible/vault_root_token--vault1"
+      trigger.run = {inline: "rm -vf ansible/vault_root_token--vault1"}
+    end # node.trigger.after
+
   end # config.vm.define
 
   ###################################################################################
@@ -46,6 +51,11 @@ Vagrant.configure("2") do |config|
       ansible.limit = "all"
       ansible.playbook = "ansible/playbook-vagrant.yml"
     end # node.vm.provision
+
+    node.trigger.after :destroy do |trigger|
+      trigger.warn = "Removing ansible/vault_root_token--vault2"
+      trigger.run = {inline: "rm -vf ansible/vault_root_token--vault2"}
+    end # node.trigger.after
 
   end # config.vm.define
 
