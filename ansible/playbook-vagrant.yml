@@ -28,3 +28,10 @@
 
 - name: 'Run playbook-all_nodes-configure_and_start_vault_server.yml'
   ansible.builtin.import_playbook: playbook-all_nodes-configure_and_start_vault_server.yml
+
+#
+# only on Vault1 server
+#
+
+- name: 'Run playbook-vault1-add_entries_to_vault_server.yml'
+  ansible.builtin.import_playbook: playbook-vault1-add_entries_to_vault_server.yml
