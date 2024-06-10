@@ -1,0 +1,11 @@
+[Unit]
+Description=Vault-sync
+
+[Service]
+Type=Simple
+RestartSec=1
+User=vault
+ExecStart=vault-sync --config /etc/vault-sync/vault-sync.yaml
+
+[Install]
+WantedBy=multi-user.target
