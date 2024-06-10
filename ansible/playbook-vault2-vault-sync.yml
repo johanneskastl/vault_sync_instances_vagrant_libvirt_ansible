@@ -16,6 +16,14 @@
   gather_facts: true
   become: true
 
+  handlers:
+
+    - name: 'Restart the vault-sync service'
+      ansible.builtin.systemd:
+        name: 'vault-sync'
+        state: 'restarted'
+        daemon_reload: true
+
   tasks:
 
     - name: 'Copy vault1 token to vault2 server'
@@ -28,7 +36,17 @@
 
     - name: 'Install vault-sync'
       community.general.zypper:
-        name: 'vault-sync'
+        name:
+          - 'vault-sync'
+          - 'system-user-vault'
+
+    - name: 'Create the systemd service'
+      ansible.builtin.template:
+        src: 'vault-sync.service.j2'
+        dest: '/etc/systemd/system/vault-sync.service'
+        owner: 'root'
+        group: 'root'
+        mode: '0644'
 
     - name: 'Create directory /etc/vault-sync/'
       ansible.builtin.file:
@@ -45,3 +63,12 @@
         owner: 'root'
         group: 'root'
         mode: '0644'
+      notify:
+        - 'Restart the vault-sync service'
+
+    - name: 'Start and enable the vault-sync service'
+      ansible.builtin.systemd:
+        name: 'vault-sync'
+        state: 'started'
+        enabled: true
+        daemon_reload: true
