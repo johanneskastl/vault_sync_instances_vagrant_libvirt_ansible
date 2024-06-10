@@ -1,0 +1,47 @@
+---
+- name: 'Gather facts on all instances'
+  hosts: 'all'
+  gather_facts: true
+  become: true
+
+  tasks:
+
+    - name: 'Read vault token on each instance'
+      ansible.builtin.slurp:
+        src: '/var/lib/vault/.vault-token'
+      register: slurp_vault_token
+
+- name: 'Setup vault-sync on vault2'
+  hosts: 'vault2'
+  gather_facts: true
+  become: true
+
+  tasks:
+
+    - name: 'Copy vault1 token to vault2 server'
+      ansible.builtin.copy:
+        src: 'vault_root_token--vault1'
+        dest: '/root/vault_root_token--vault1'
+        owner: 'root'
+        group: 'root'
+        mode: '0644'
+
+    - name: 'Install vault-sync'
+      community.general.zypper:
+        name: 'vault-sync'
+
+    - name: 'Create directory /etc/vault-sync/'
+      ansible.builtin.file:
+        path: '/etc/vault-sync/'
+        state: 'directory'
+        owner: 'root'
+        group: 'root'
+        mode: '0755'
+
+    - name: 'Create configuration file /etc/vault-sync/vault-sync.yaml'
+      ansible.builtin.template:
+        src: 'vault-sync.yaml.j2'
+        dest: '/etc/vault-sync/vault-sync.yaml'
+        owner: 'root'
+        group: 'root'
+        mode: '0644'
